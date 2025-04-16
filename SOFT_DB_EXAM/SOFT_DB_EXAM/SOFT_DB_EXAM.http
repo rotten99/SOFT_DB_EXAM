@@ -1,0 +1,6 @@
+@SOFT_DB_EXAM_HostAddress = http://localhost:5199
+
+GET {{SOFT_DB_EXAM_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
