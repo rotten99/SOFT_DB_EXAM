@@ -2,7 +2,7 @@
 
 public class WatchList
 {
-    public int MovieId { get; set; }
+    public List<int> MovieIds { get; set; }
     public DateTime AddedAt { get; set; }
     public bool HasWatched { get; set; }
 
