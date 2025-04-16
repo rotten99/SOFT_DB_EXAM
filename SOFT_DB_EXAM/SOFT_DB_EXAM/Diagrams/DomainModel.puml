@@ -1,27 +1,19 @@
 ﻿@startuml
 'https://plantuml.com/class-diagram
 
-abstract class AbstractList
-abstract AbstractCollection
-interface List
-interface Collection
+Entity Movie
+Entity User
+Entity Review
+Entity WatchList
+Entity WatchParty
 
-List <|-- AbstractList
-Collection <|-- AbstractCollection
+Movie "1" -- "*" Review : has
+Review "1" -- "1" User : written by
 
-Collection <|- List
-AbstractCollection <|- AbstractList
-AbstractList <|-- ArrayList
+User "1" -- "*" WatchList : owns
+WatchList "*" -- "*" Movie : contains
 
-class ArrayList {
-Object[] elementData
-size()
-}
-
-enum TimeUnit {
-DAYS
-HOURS
-MINUTES
-}
+User "*" -- "*" WatchParty : participates
+WatchParty "*" -- "*" Movie : features
 
 @enduml
