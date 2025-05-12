@@ -1,12 +1,13 @@
-﻿namespace SOFT_DB_EXAM.Entities;
-
-public class WatchList
+﻿public class WatchList
 {
-    public List<int> MovieIds { get; set; }
-    public DateTime AddedAt { get; set; }
-    public bool HasWatched { get; set; }
-
+    public int Id { get; set; }
+    public DateTime AddedDate { get; set; }
+    public string Name { get; set; }
+    public bool IsPrivate { get; set; }
+    public ICollection<ListedMovie> ListedMovies { get; set; }
+    
     public WatchList()
     {
+        
     }
 }
