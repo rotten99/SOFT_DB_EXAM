@@ -12,7 +12,7 @@ using SOFT_DB_EXAM;
 namespace SOFT_DB_EXAM.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250512090642_Initial")]
+    [Migration("20250512102632_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -134,7 +134,7 @@ namespace SOFT_DB_EXAM.Migrations
                     b.ToTable("Reviews");
                 });
 
-            modelBuilder.Entity("SOFT_DB_EXAM.Entities.FollowedWatchList", b =>
+            modelBuilder.Entity("SOFT_DB_EXAM.Entities.WatchListsFollowed", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -145,9 +145,16 @@ namespace SOFT_DB_EXAM.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
+                    b.Property<int>("WatchListId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.ToTable("FollowedWatchLists");
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WatchListId");
+
+                    b.ToTable("WatchListsFollowed");
                 });
 
             modelBuilder.Entity("User", b =>
@@ -195,9 +202,6 @@ namespace SOFT_DB_EXAM.Migrations
                     b.Property<DateTime>("AddedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("FollowedWatchListId")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsPrivate")
                         .HasColumnType("bit");
 
@@ -205,19 +209,12 @@ namespace SOFT_DB_EXAM.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("UserId1")
+                    b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FollowedWatchListId");
-
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
 
                     b.ToTable("WatchLists");
                 });
@@ -255,24 +252,34 @@ namespace SOFT_DB_EXAM.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("WatchList", b =>
+            modelBuilder.Entity("SOFT_DB_EXAM.Entities.WatchListsFollowed", b =>
                 {
-                    b.HasOne("SOFT_DB_EXAM.Entities.FollowedWatchList", null)
-                        .WithMany("WatchLists")
-                        .HasForeignKey("FollowedWatchListId");
-
-                    b.HasOne("User", null)
+                    b.HasOne("User", "User")
                         .WithMany("WatchListsFollowed")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
-                    b.HasOne("User", null)
-                        .WithMany("WatchListsOwned")
-                        .HasForeignKey("UserId1");
+                    b.HasOne("WatchList", "WatchList")
+                        .WithMany("Followers")
+                        .HasForeignKey("WatchListId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("WatchList");
                 });
 
-            modelBuilder.Entity("SOFT_DB_EXAM.Entities.FollowedWatchList", b =>
+            modelBuilder.Entity("WatchList", b =>
                 {
-                    b.Navigation("WatchLists");
+                    b.HasOne("User", "User")
+                        .WithMany("WatchListsOwned")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("User", b =>
@@ -284,6 +291,11 @@ namespace SOFT_DB_EXAM.Migrations
                     b.Navigation("WatchListsFollowed");
 
                     b.Navigation("WatchListsOwned");
+                });
+
+            modelBuilder.Entity("WatchList", b =>
+                {
+                    b.Navigation("Followers");
                 });
 #pragma warning restore 612, 618
         }

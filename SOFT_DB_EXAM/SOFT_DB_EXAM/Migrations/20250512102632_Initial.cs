@@ -27,19 +27,6 @@ namespace SOFT_DB_EXAM.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "FollowedWatchLists",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_FollowedWatchLists", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ListedMovies",
                 columns: table => new
                 {
@@ -123,28 +110,17 @@ namespace SOFT_DB_EXAM.Migrations
                     AddedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IsPrivate = table.Column<bool>(type: "bit", nullable: false),
-                    FollowedWatchListId = table.Column<int>(type: "int", nullable: true),
-                    UserId = table.Column<int>(type: "int", nullable: true),
-                    UserId1 = table.Column<int>(type: "int", nullable: true)
+                    UserId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_WatchLists", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_WatchLists_FollowedWatchLists_FollowedWatchListId",
-                        column: x => x.FollowedWatchListId,
-                        principalTable: "FollowedWatchLists",
-                        principalColumn: "Id");
-                    table.ForeignKey(
                         name: "FK_WatchLists_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_WatchLists_Users_UserId1",
-                        column: x => x.UserId1,
-                        principalTable: "Users",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -171,6 +147,32 @@ namespace SOFT_DB_EXAM.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "WatchListsFollowed",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    WatchListId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WatchListsFollowed", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WatchListsFollowed_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_WatchListsFollowed_WatchLists_WatchListId",
+                        column: x => x.WatchListId,
+                        principalTable: "WatchLists",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_FavouriteMovies_UserId",
                 table: "FavouriteMovies",
@@ -187,19 +189,19 @@ namespace SOFT_DB_EXAM.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_WatchLists_FollowedWatchListId",
-                table: "WatchLists",
-                column: "FollowedWatchListId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_WatchLists_UserId",
                 table: "WatchLists",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_WatchLists_UserId1",
-                table: "WatchLists",
-                column: "UserId1");
+                name: "IX_WatchListsFollowed_UserId",
+                table: "WatchListsFollowed",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WatchListsFollowed_WatchListId",
+                table: "WatchListsFollowed",
+                column: "WatchListId");
         }
 
         /// <inheritdoc />
@@ -218,13 +220,13 @@ namespace SOFT_DB_EXAM.Migrations
                 name: "Reviews");
 
             migrationBuilder.DropTable(
+                name: "WatchListsFollowed");
+
+            migrationBuilder.DropTable(
                 name: "ListedMovies");
 
             migrationBuilder.DropTable(
                 name: "WatchLists");
-
-            migrationBuilder.DropTable(
-                name: "FollowedWatchLists");
 
             migrationBuilder.DropTable(
                 name: "Users");
