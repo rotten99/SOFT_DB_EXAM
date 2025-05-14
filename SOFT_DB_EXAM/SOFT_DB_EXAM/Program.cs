@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 using SOFT_DB_EXAM;
+using StackExchange.Redis;
 
 public class Program
 {
@@ -13,6 +16,21 @@ public class Program
 // Register DbContext
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        
+        builder.Services.Configure<MongoDbSettings>(
+            builder.Configuration.GetSection("MongoDbSettings"));
+
+        builder.Services.AddSingleton<IMongoClient>(sp =>
+        {
+            var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+            return new MongoClient(settings.ConnectionString);
+        });
+        
+        builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var configuration = builder.Configuration.GetSection("Redis")["ConnectionString"];
+            return ConnectionMultiplexer.Connect(configuration??"localhost:6379");
+        });
 
         
         builder.Services.AddLogging();
