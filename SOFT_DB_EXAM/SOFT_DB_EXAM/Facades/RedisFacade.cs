@@ -46,5 +46,16 @@ namespace SOFT_DB_EXAM.Facades
 
             return result;
         }
+        
+        public async Task<string?> GetStringAsync(string key)
+        {
+            return await _database.StringGetAsync(key);
+        }
+
+        public async Task SetStringAsync(string key, string value, TimeSpan expiry)
+        {
+            await _database.StringSetAsync(key, value, expiry);
+        }
+
     }
 }

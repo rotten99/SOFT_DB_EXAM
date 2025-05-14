@@ -2,21 +2,20 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using SOFT_DB_EXAM;
+using SOFT_DB_EXAM.Facades;
 using StackExchange.Redis;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-        builder.Services.AddControllers();
-
-// Register DbContext
+// SQL Server (EF Core)
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-        
+
+// MongoDB
         builder.Services.Configure<MongoDbSettings>(
             builder.Configuration.GetSection("MongoDbSettings"));
 
@@ -25,20 +24,21 @@ public class Program
             var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
             return new MongoClient(settings.ConnectionString);
         });
-        
-        builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-        {
-            var configuration = builder.Configuration.GetSection("Redis")["ConnectionString"];
-            return ConnectionMultiplexer.Connect(configuration??"localhost:6379");
-        });
 
-        
+        builder.Services.AddScoped<MovieFacade, MovieFacade>();
+        builder.Services.AddScoped<RatingSeederService>();
+
+
+// Redis
+        builder.Services.AddSingleton<IConnectionMultiplexer>(
+            ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]));
+        builder.Services.AddScoped<RedisFacade>();
+
+        builder.Services.AddControllers();
+
+
         builder.Services.AddLogging();
-        
-        
-        
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
@@ -51,13 +51,16 @@ public class Program
             try
             {
                 // Apply any pending migrations and create the database if it doesn't exist
-                dbContext.Database.Migrate();
+                await dbContext.Database.MigrateAsync();
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
                 throw;
             }
+
+            var ratingSeeder = scope.ServiceProvider.GetRequiredService<RatingSeederService>();
+            await ratingSeeder.SeedAverageRatingsIfEmptyAsync();
         }
 
 // Configure the HTTP request pipeline.
