@@ -1,0 +1,128 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Watch Party</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #chat { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; margin-top: 10px; }
+        input, button { padding: 5px; margin: 5px; }
+    </style>
+</head>
+<body>
+<h2>🎬 Watch Party Chat</h2>
+
+<label for="partyId">Party ID:</label>
+<input type="number" id="partyId" placeholder="e.g., 123">
+<br>
+
+<label for="userId">User ID:</label>
+<input type="number" id="userId" placeholder="e.g., 1">
+<button id="joinBtn">Join Party</button>
+
+<br>
+<label>Message:</label>
+<input type="text" id="message" placeholder="Say something...">
+<button id="sendBtn">Send</button>
+
+<div id="chat"></div>
+
+<button id="createBtn">Create Party</button>
+
+<!-- ✅ Load SignalR before anything else -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+
+
+<!-- ✅ Only run code after DOM and script is loaded -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        let connection;
+        let currentPartyId = null;
+        let currentUserName = null;
+
+        const connectionBuilder = () => new signalR.HubConnectionBuilder()
+            .withUrl("/hub/watchparty")
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        async function joinParty() {
+            currentPartyId = document.getElementById("partyId").value;
+            const userId = document.getElementById("userId").value;
+
+            if (!currentPartyId || !userId) return alert("Enter both party ID and user ID.");
+
+            try {
+                const response = await fetch('/api/watchparties/join', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ partyId: parseInt(currentPartyId), userId: parseInt(userId) })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    alert(`Not allowed to join: ${error}`);
+                    return;
+                }
+
+                currentUserName = await response.text();
+
+                connection = connectionBuilder();
+                connection.on("ReceiveMessage", data => {
+                    const chat = document.getElementById("chat");
+                    const timestamp = new Date(data.timestamp).toLocaleTimeString();
+                    chat.innerHTML += `<div><strong>${data.user}</strong> [${timestamp}]: ${data.message}</div>`;
+                    chat.scrollTop = chat.scrollHeight;
+                });
+
+                await connection.start();
+                await connection.invoke("JoinParty", parseInt(currentPartyId), currentUserName);
+                logSystem(`Joined watch party ${currentPartyId} as ${currentUserName}`);
+            } catch (err) {
+                console.error("Join error:", err);
+                alert("An error occurred while joining the party.");
+            }
+        }
+
+        async function sendMessage() {
+            const msg = document.getElementById("message").value;
+            if (!currentPartyId || !currentUserName) return alert("Join the party first.");
+            if (!msg) return;
+
+            try {
+                await connection.invoke("SendMessageToParty", parseInt(currentPartyId), currentUserName, msg);
+                document.getElementById("message").value = "";
+            } catch (err) {
+                console.error("Send failed:", err);
+            }
+        }
+
+        function logSystem(text) {
+            const chat = document.getElementById("chat");
+            const timestamp = new Date().toLocaleTimeString();
+            chat.innerHTML += `<div><em>System [${timestamp}]: ${text}</em></div>`;
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // Attach handlers AFTER DOM is ready
+        document.getElementById("joinBtn").addEventListener("click", joinParty);
+        document.getElementById("sendBtn").addEventListener("click", sendMessage);
+        document.getElementById("createBtn").addEventListener("click", async () => {
+            const response = await fetch('/api/watchparties', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: "My Movie Night",
+                    movieIds: [101, 202],
+                    userIds: [1, 2],
+                    startTime: new Date().toISOString(),
+                    endTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+                })
+            });
+
+            const result = await response.json();
+            alert(`Created party with ID: ${result.PartyId}`);
+        });
+    });
+</script>
+</body>
+</html>

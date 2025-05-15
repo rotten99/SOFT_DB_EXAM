@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using SOFT_DB_EXAM;
 using SOFT_DB_EXAM.Facades;
+using SOFT_DB_EXAM.Hubs;
 using StackExchange.Redis;
 
 public class Program
@@ -35,6 +36,10 @@ public class Program
         builder.Services.AddScoped<RedisFacade>();
         builder.Services.AddScoped<ReviewFacade>();
         builder.Services.AddScoped<WatchListFacade>();
+        builder.Services.AddScoped<UserFacade>();
+        builder.Services.AddScoped<FavouriteMovieFacade>();
+        builder.Services.AddSignalR();
+        builder.Services.AddScoped<WatchPartyFacade>();
 
         builder.Services.AddControllers();
 
@@ -43,6 +48,18 @@ public class Program
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+        
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowAll", policy =>
+            {
+                policy.AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials()
+                    .SetIsOriginAllowed(_ => true); // Accept all origins for testing
+            });
+        });
+
 
         var app = builder.Build();
 
@@ -64,6 +81,10 @@ public class Program
             var ratingSeeder = scope.ServiceProvider.GetRequiredService<RatingSeederService>();
             await ratingSeeder.SeedAverageRatingsIfEmptyAsync();
         }
+        app.MapHub<WatchPartyHub>("/hub/watchparty");
+        
+
+
 
 // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
@@ -73,9 +94,11 @@ public class Program
         }
 
         app.UseHttpsRedirection();
+        
+        app.UseDefaultFiles(); // Serves index.html if no file is specified
+        app.UseStaticFiles();  // Allows serving .html, .js, .css etc. from wwwroot/
 
         app.UseCors("AllowAll");
-        app.UseHttpsRedirection();
         app.UseAuthorization();
         app.MapControllers();
 

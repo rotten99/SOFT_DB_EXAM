@@ -13,6 +13,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<FavouriteMovie> FavouriteMovies { get; set; }
     public DbSet<ListedMovie> ListedMovies { get; set; }
     public DbSet<AverageRating> AverageRatings { get; set; }
+    public DbSet<WatchParty> WatchParties { get; set; }
+
     
     
     
