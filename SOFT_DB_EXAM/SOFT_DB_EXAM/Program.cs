@@ -33,6 +33,7 @@ public class Program
         builder.Services.AddSingleton<IConnectionMultiplexer>(
             ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]));
         builder.Services.AddScoped<RedisFacade>();
+        builder.Services.AddScoped<ReviewFacade>();
 
         builder.Services.AddControllers();
 
