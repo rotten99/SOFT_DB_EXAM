@@ -34,6 +34,7 @@ public class Program
             ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]));
         builder.Services.AddScoped<RedisFacade>();
         builder.Services.AddScoped<ReviewFacade>();
+        builder.Services.AddScoped<WatchListFacade>();
 
         builder.Services.AddControllers();
 

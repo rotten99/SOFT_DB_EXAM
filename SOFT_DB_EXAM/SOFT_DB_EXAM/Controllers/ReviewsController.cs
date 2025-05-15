@@ -53,4 +53,12 @@ public class ReviewsController : ControllerBase
         var rating = await _reviewFacade.GetAverageRatingByMovieIdAsync(movieId);
         return rating == null ? NotFound() : Ok(rating);
     }
+    
+    [HttpGet("{reviewId}")]
+    public async Task<IActionResult> GetById(int reviewId)
+    {
+        var review = await _reviewFacade.GetReviewByIdAsync(reviewId);
+        return review == null ? NotFound() : Ok(review);
+    }
+
 }

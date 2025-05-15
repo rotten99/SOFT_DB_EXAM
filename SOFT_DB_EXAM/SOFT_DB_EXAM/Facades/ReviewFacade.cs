@@ -151,6 +151,47 @@ public class ReviewFacade
         return dbRating;
     }
 
+    public async Task<Review?> GetReviewByIdAsync(int reviewId)
+    {
+        var cacheKey = $"reviews:{reviewId}";
+        _logger.LogInformation("Checking Redis cache for review {ReviewId}", reviewId);
 
-    
+        var cachedJson = await _redis.GetStringAsync(cacheKey);
+        if (!string.IsNullOrEmpty(cachedJson))
+        {
+            _logger.LogInformation("Loaded review {ReviewId} from cache", reviewId);
+            var review = System.Text.Json.JsonSerializer.Deserialize<Review>(cachedJson)!;
+            review.Movie = await _movieFacade.GetByIdAsync(review.MovieId);
+            return review;
+        }
+
+        using var context = ApplicationContextFactory.CreateDbContext();
+
+        var dbReview = context.Reviews.FirstOrDefault(r => r.Id == reviewId);
+        if (dbReview == null)
+        {
+            _logger.LogWarning("Review {ReviewId} not found in database", reviewId);
+            return null;
+        }
+
+        dbReview.Movie = await _movieFacade.GetByIdAsync(dbReview.MovieId);
+
+        // Strip Movie before caching
+        var stripped = new Review
+        {
+            Id = dbReview.Id,
+            UserId = dbReview.UserId,
+            MovieId = dbReview.MovieId,
+            Title = dbReview.Title,
+            Description = dbReview.Description,
+            Rating = dbReview.Rating
+        };
+
+        var json = System.Text.Json.JsonSerializer.Serialize(stripped);
+        await _redis.SetStringAsync(cacheKey, json, TimeSpan.FromMinutes(5));
+
+        _logger.LogInformation("Cached review {ReviewId}", reviewId);
+        return dbReview;
+    }
+   
 }

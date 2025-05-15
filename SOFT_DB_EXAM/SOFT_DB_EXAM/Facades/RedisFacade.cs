@@ -15,37 +15,7 @@ namespace SOFT_DB_EXAM.Facades
             _database = _connectionMultiplexer.GetDatabase();
         }
 
-        /// <summary>
-        /// Stores a set of key-value pairs in a Redis hash.
-        /// </summary>
-        public async Task SetHashAsync(string key, Dictionary<string, string> values)
-        {
-            var hashEntries = new List<HashEntry>();
 
-            foreach (var kvp in values)
-            {
-                hashEntries.Add(new HashEntry(kvp.Key, kvp.Value));
-            }
-
-            await _database.HashSetAsync(key, hashEntries.ToArray());
-        }
-
-        /// <summary>
-        /// Retrieves all fields from a Redis hash.
-        /// </summary>
-        public async Task<Dictionary<string, string>> GetHashAsync(string key)
-        {
-            var hashEntries = await _database.HashGetAllAsync(key);
-
-            var result = new Dictionary<string, string>();
-
-            foreach (var entry in hashEntries)
-            {
-                result.Add(entry.Name, entry.Value);
-            }
-
-            return result;
-        }
         
         public async Task<string?> GetStringAsync(string key)
         {
@@ -56,6 +26,12 @@ namespace SOFT_DB_EXAM.Facades
         {
             await _database.StringSetAsync(key, value, expiry);
         }
+        
+        public async Task DeleteKeyAsync(string key)
+        {
+            await _database.KeyDeleteAsync(key);
+        }
+
 
     }
 }
