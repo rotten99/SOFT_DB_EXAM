@@ -66,5 +66,22 @@ public class ReviewsController : ControllerBase
         var review = await _reviewFacade.GetReviewByIdAsync(reviewId);
         return review == null ? NotFound() : Ok(review);
     }
+    
+    [HttpGet("stats")]
+    [Authorize]
+    public async Task<ActionResult<(int TotalReviews, int UsersWithAtLeastOneReview)>> GetStats()
+    {
+        try
+        {
+            var stats = await _reviewFacade.GetReviewStatisticsAsync();
+            _logger.LogInformation("Fetched review statistics: {Stats}", stats);
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fetch review statistics.");
+            return StatusCode(500, "Internal server error.");
+        }
+    }
 
 }
