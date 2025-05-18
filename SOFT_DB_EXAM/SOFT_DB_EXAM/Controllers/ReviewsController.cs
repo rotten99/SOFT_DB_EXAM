@@ -21,11 +21,11 @@ public class ReviewsController : ControllerBase
 
     [HttpPost]
     [Authorize]
-    public IActionResult Create([FromBody] CreateReviewDto dto)
+    public async Task<IActionResult> Create([FromBody] CreateReviewDto dto)
     {
         try
         {
-            _reviewFacade.CreateReview(dto.ReviewText, dto.Rating, dto.MovieId, dto.UserId, dto.Title);
+            await _reviewFacade.CreateReviewAsync(dto.ReviewText, dto.Rating, dto.MovieId, dto.UserId, dto.Title);
             return Ok("Review created successfully.");
         }
         catch (Exception ex)

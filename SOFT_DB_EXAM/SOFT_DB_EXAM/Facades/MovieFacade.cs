@@ -21,6 +21,24 @@ public class MovieFacade
         _logger.LogInformation("MovieFacade initialized with DB: {Database} and Collection: {Collection}",
             settings.Value.DatabaseName, settings.Value.CollectionName);
     }
+    
+    public async Task UpdateRatingAsync(int movieId, double average, int count)
+    {
+        var update = Builders<Movie>.Update
+            .Set(m => m.Vote_Average, average)
+            .Set(m => m.Vote_Count, count);
+
+        await _movies.UpdateOneAsync(m => m.MovieId == movieId, update);
+
+        _logger.LogInformation("Updated movie {MovieId} with new rating {Rating} and count {Count}", movieId, average, count);
+
+        // Invalidate cached movie
+        var cacheKey = $"movie:{movieId}";
+        await _redis.SetStringAsync(cacheKey,
+            System.Text.Json.JsonSerializer.Serialize(await GetByIdAsync(movieId)),
+            TimeSpan.FromSeconds(CacheTtlSeconds));
+    }
+
 
 
     public async Task<Movie> GetByIdAsync(int id)

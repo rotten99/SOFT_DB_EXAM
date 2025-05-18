@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components.Web;
 using Microsoft.EntityFrameworkCore;
+using SOFT_DB_EXAM.Entities;
 
 namespace SOFT_DB_EXAM.Facades;
 
@@ -7,9 +8,8 @@ public class ReviewFacade
 {
     private readonly ILogger<ReviewFacade> _logger;
     private readonly RedisFacade _redis;
-    private const int CacheTtlSeconds = 300; // 5 minutes
-    
     private readonly MovieFacade _movieFacade;
+    private const int CacheTtlSeconds = 300;
 
     public ReviewFacade(ILogger<ReviewFacade> logger, RedisFacade redis, MovieFacade movieFacade)
     {
@@ -18,8 +18,7 @@ public class ReviewFacade
         _movieFacade = movieFacade;
     }
 
-    
-    public void CreateReview(string reviewText, int rating, int movieId, int userId, string title)
+    public async Task CreateReviewAsync(string reviewText, int rating, int movieId, int userId, string title)
     {
         using var context = ApplicationContextFactory.CreateDbContext();
         using var transaction = context.Database.BeginTransaction();
@@ -28,11 +27,10 @@ public class ReviewFacade
         {
             _logger.LogInformation("Creating review for movie {MovieId} by user {UserId}", movieId, userId);
 
-            // Use ExecuteSqlRaw to bypass OUTPUT clause limitation
             context.Database.ExecuteSqlRaw(@"
-            INSERT INTO Reviews (UserId, MovieId, Title, Description, Rating)
-            VALUES (@p0, @p1, @p2, @p3, @p4);
-        ", userId, movieId, title, reviewText, rating);
+                INSERT INTO Reviews (UserId, MovieId, Title, Description, Rating)
+                VALUES (@p0, @p1, @p2, @p3, @p4);
+            ", userId, movieId, title, reviewText, rating);
 
             transaction.Commit();
             _logger.LogInformation("Successfully created review for movie {MovieId} by user {UserId}", movieId, userId);
@@ -43,9 +41,25 @@ public class ReviewFacade
             transaction.Rollback();
             throw;
         }
+
+        try
+        {
+            var averageRating = context.AverageRatings.FirstOrDefault(a => a.MovieId == movieId);
+            if (averageRating == null)
+            {
+                _logger.LogWarning("No average rating found in SQL for movie {MovieId}", movieId);
+                return;
+            }
+
+            await _movieFacade.UpdateRatingAsync(movieId, (double)averageRating.AverageRatings, averageRating.NumberOfRatings);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update MongoDB movie rating for MovieId {MovieId}", movieId);
+            throw;
+        }
     }
 
-    
     public async Task<List<Review>> GetReviewsByUserIdAsync(int userId)
     {
         var cacheKey = $"reviews:user:{userId}";
@@ -58,21 +72,16 @@ public class ReviewFacade
             var reviews = System.Text.Json.JsonSerializer.Deserialize<List<Review>>(cachedJson)!;
 
             foreach (var review in reviews)
-            {
                 review.Movie = await _movieFacade.GetByIdAsync(review.MovieId);
-            }
 
             return reviews;
         }
 
-        _logger.LogInformation("Querying database for reviews by user {UserId}", userId);
         using var context = ApplicationContextFactory.CreateDbContext();
         var dbReviews = context.Reviews.Where(r => r.UserId == userId).ToList();
 
         foreach (var review in dbReviews)
-        {
             review.Movie = await _movieFacade.GetByIdAsync(review.MovieId);
-        }
 
         var json = System.Text.Json.JsonSerializer.Serialize(dbReviews);
         await _redis.SetStringAsync(cacheKey, json, TimeSpan.FromSeconds(CacheTtlSeconds));
@@ -80,7 +89,7 @@ public class ReviewFacade
         _logger.LogInformation("Cached reviews for user {UserId}", userId);
         return dbReviews;
     }
-    
+
     public async Task<List<Review>> GetReviewsByMovieIdAsync(int movieId)
     {
         var cacheKey = $"reviews:movie:{movieId}";
@@ -94,22 +103,17 @@ public class ReviewFacade
 
             var movie = await _movieFacade.GetByIdAsync(movieId);
             foreach (var review in reviews)
-            {
                 review.Movie = movie;
-            }
 
             return reviews;
         }
 
-        _logger.LogInformation("Querying database for reviews by movie {MovieId}", movieId);
         using var context = ApplicationContextFactory.CreateDbContext();
         var dbReviews = context.Reviews.Where(r => r.MovieId == movieId).ToList();
 
         var movieFromMongo = await _movieFacade.GetByIdAsync(movieId);
         foreach (var review in dbReviews)
-        {
             review.Movie = movieFromMongo;
-        }
 
         var json = System.Text.Json.JsonSerializer.Serialize(dbReviews);
         await _redis.SetStringAsync(cacheKey, json, TimeSpan.FromSeconds(CacheTtlSeconds));
@@ -126,28 +130,19 @@ public class ReviewFacade
         var cachedJson = await _redis.GetStringAsync(cacheKey);
         if (!string.IsNullOrEmpty(cachedJson))
         {
-            _logger.LogInformation("Loaded average rating for movie {MovieId} from cache.", movieId);
             var rating = System.Text.Json.JsonSerializer.Deserialize<AverageRating>(cachedJson)!;
             rating.Movie = await _movieFacade.GetByIdAsync(movieId);
             return rating;
         }
 
-        _logger.LogInformation("Querying SQL for average rating of movie {MovieId}", movieId);
         using var context = ApplicationContextFactory.CreateDbContext();
-
         var dbRating = context.AverageRatings.FirstOrDefault(r => r.MovieId == movieId);
-        if (dbRating == null)
-        {
-            _logger.LogWarning("No average rating found in SQL for movie {MovieId}", movieId);
-            return null;
-        }
+        if (dbRating == null) return null;
 
         dbRating.Movie = await _movieFacade.GetByIdAsync(movieId);
-
         var json = System.Text.Json.JsonSerializer.Serialize(dbRating);
         await _redis.SetStringAsync(cacheKey, json, TimeSpan.FromMinutes(5));
 
-        _logger.LogInformation("Cached average rating for movie {MovieId}", movieId);
         return dbRating;
     }
 
@@ -159,24 +154,17 @@ public class ReviewFacade
         var cachedJson = await _redis.GetStringAsync(cacheKey);
         if (!string.IsNullOrEmpty(cachedJson))
         {
-            _logger.LogInformation("Loaded review {ReviewId} from cache", reviewId);
             var review = System.Text.Json.JsonSerializer.Deserialize<Review>(cachedJson)!;
             review.Movie = await _movieFacade.GetByIdAsync(review.MovieId);
             return review;
         }
 
         using var context = ApplicationContextFactory.CreateDbContext();
-
         var dbReview = context.Reviews.FirstOrDefault(r => r.Id == reviewId);
-        if (dbReview == null)
-        {
-            _logger.LogWarning("Review {ReviewId} not found in database", reviewId);
-            return null;
-        }
+        if (dbReview == null) return null;
 
         dbReview.Movie = await _movieFacade.GetByIdAsync(dbReview.MovieId);
 
-        // Strip Movie before caching
         var stripped = new Review
         {
             Id = dbReview.Id,
@@ -190,8 +178,6 @@ public class ReviewFacade
         var json = System.Text.Json.JsonSerializer.Serialize(stripped);
         await _redis.SetStringAsync(cacheKey, json, TimeSpan.FromMinutes(5));
 
-        _logger.LogInformation("Cached review {ReviewId}", reviewId);
         return dbReview;
     }
-   
 }
