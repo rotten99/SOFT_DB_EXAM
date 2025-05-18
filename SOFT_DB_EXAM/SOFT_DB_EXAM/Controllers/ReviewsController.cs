@@ -68,8 +68,8 @@ public class ReviewsController : ControllerBase
     }
     
     [HttpGet("stats")]
-    [Authorize]
-    public async Task<ActionResult<(int TotalReviews, int UsersWithAtLeastOneReview)>> GetStats()
+    // [Authorize]
+    public async Task<ActionResult<int[]>> GetStats()
     {
         try
         {

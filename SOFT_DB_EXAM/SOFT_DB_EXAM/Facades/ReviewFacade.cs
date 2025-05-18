@@ -213,7 +213,7 @@ public class ReviewFacade
         return dbReview;
     }
     
-    public async Task<(int TotalReviews, int UsersWithAtLeastOneReview)> GetReviewStatisticsAsync()
+    public async Task<int[]> GetReviewStatisticsAsync()
     {
         
         using var context = ApplicationContextFactory.CreateDbContext();
@@ -226,6 +226,6 @@ public class ReviewFacade
             .Where(u => u.Reviews.Any())       
             .CountAsync();
 
-        return (totalReviews, usersWithReviews);
+        return ([totalReviews, usersWithReviews]);
     }
 }
