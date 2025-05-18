@@ -74,6 +74,14 @@ public class WatchListsController : ControllerBase
         return Ok(lists);
     }
     
+    [HttpGet("{watchListId}/movies")]
+    public async Task<IActionResult> GetMoviesByWatchListId(int watchListId)
+    {
+        var movies = await _watchListFacade.GetWatchListByIdAsync(watchListId);
+        return Ok(movies);
+    }
+    
+    
     [HttpPost("{watchListId}/remove-movie")]
     [Authorize]
     public async Task<IActionResult> RemoveMovie(int watchListId, [FromQuery] int movieId)
