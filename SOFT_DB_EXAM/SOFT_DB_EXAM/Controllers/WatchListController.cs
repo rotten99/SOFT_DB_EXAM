@@ -81,5 +81,11 @@ public class WatchListsController : ControllerBase
         await _watchListFacade.RemoveMovieFromWatchListAsync(watchListId, movieId);
         return Ok("Movie removed.");
     }
+    
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetAll()
+        => Ok(await _watchListFacade.GetAllWatchListsAsync());
+
 
 }

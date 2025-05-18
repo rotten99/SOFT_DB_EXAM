@@ -189,4 +189,31 @@ public class AuthController : ControllerBase
             MoviesWatched = user.MoviesWatched
         });
     }
+    
+    // in AuthController
+
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> Me()
+    {
+        var uidClaim = User.FindFirst("uid")?.Value;
+        if (!int.TryParse(uidClaim, out var userId))
+            return Unauthorized();
+
+        var user = await _dbContext.Users
+            .Where(u => u.Id == userId)
+            .Select(u => new {
+                u.Id,
+                Username = u.UserName,
+                u.Email,
+                u.CreatedAt,
+                u.MoviesReviewed,
+                u.MoviesWatched
+            })
+            .SingleOrDefaultAsync();
+
+        if (user == null) return NotFound();
+        return Ok(user);
+    }
+
 }
