@@ -5,6 +5,12 @@ using SOFT_DB_EXAM;
 using SOFT_DB_EXAM.Facades;
 using SOFT_DB_EXAM.Hubs;
 using StackExchange.Redis;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
+
 
 public class Program
 {
@@ -47,7 +53,38 @@ public class Program
         builder.Services.AddLogging();
 
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+
+        builder.Services.AddSwaggerGen(c =>
+        {
+            // 1) The normal Swagger setup
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "Your API", Version = "v1" });
+
+            // 2) Add JWT bearer support
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name         = "Authorization",
+                Type         = SecuritySchemeType.ApiKey,
+                Scheme       = "Bearer",
+                BearerFormat = "JWT",
+                In           = ParameterLocation.Header,
+                Description  = "Enter: Bearer {your JWT token here}"
+            });
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme 
+                    { 
+                        Reference = new OpenApiReference 
+                        { 
+                            Type = ReferenceType.SecurityScheme, 
+                            Id   = "Bearer" 
+                        } 
+                    },
+                    Array.Empty<string>()
+                }
+            });
+        });
+
         
         builder.Services.AddCors(options =>
         {
@@ -59,6 +96,40 @@ public class Program
                     .SetIsOriginAllowed(_ => true); // Accept all origins for testing
             });
         });
+        
+        builder.Services.Configure<JwtSettings>(
+            builder.Configuration.GetSection("Jwt"));
+
+// 2) Add Authentication & JWT Bearer
+        var jwtSection = builder.Configuration.GetSection("Jwt");
+        var jwtSettings = jwtSection.Get<JwtSettings>()!;
+
+        builder.Services
+            .AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer           = true,
+                    ValidateAudience         = true,
+                    ValidateLifetime         = true,
+                    ValidateIssuerSigningKey = true,
+
+                    ValidIssuer   = jwtSettings.Issuer,
+                    ValidAudience = jwtSettings.Audience,
+                    IssuerSigningKey =
+                        new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key!)),
+
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
+
+// 3) Add Authorization
+        builder.Services.AddAuthorization();
 
 
         var app = builder.Build();
@@ -99,6 +170,7 @@ public class Program
         app.UseStaticFiles();  // Allows serving .html, .js, .css etc. from wwwroot/
 
         app.UseCors("AllowAll");
+        app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
 
