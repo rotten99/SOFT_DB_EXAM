@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SOFT_DB_EXAM.Dtos;
 using SOFT_DB_EXAM.Facades;
 using SOFT_DB_EXAM.Entities;
@@ -19,6 +20,7 @@ public class ReviewsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     public IActionResult Create([FromBody] CreateReviewDto dto)
     {
         try
@@ -34,6 +36,7 @@ public class ReviewsController : ControllerBase
     }
 
     [HttpGet("user/{userId}")]
+    [Authorize]
     public async Task<IActionResult> GetByUserId(int userId)
     {
         var reviews = await _reviewFacade.GetReviewsByUserIdAsync(userId);
@@ -41,6 +44,7 @@ public class ReviewsController : ControllerBase
     }
 
     [HttpGet("movie/{movieId}")]
+    [Authorize]
     public async Task<IActionResult> GetByMovieId(int movieId)
     {
         var reviews = await _reviewFacade.GetReviewsByMovieIdAsync(movieId);
@@ -48,6 +52,7 @@ public class ReviewsController : ControllerBase
     }
 
     [HttpGet("movie/{movieId}/average-rating")]
+    [Authorize]
     public async Task<IActionResult> GetAverageRating(int movieId)
     {
         var rating = await _reviewFacade.GetAverageRatingByMovieIdAsync(movieId);
@@ -55,6 +60,7 @@ public class ReviewsController : ControllerBase
     }
     
     [HttpGet("{reviewId}")]
+    [Authorize]
     public async Task<IActionResult> GetById(int reviewId)
     {
         var review = await _reviewFacade.GetReviewByIdAsync(reviewId);

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SOFT_DB_EXAM.Facades;
 
 [ApiController]
@@ -13,6 +14,7 @@ public class FavouriteMoviesController : ControllerBase
     }
 
     [HttpPost("add")]
+    [Authorize]
     public async Task<IActionResult> Add([FromQuery] int userId, [FromQuery] int movieId)
     {
         await _facade.AddFavouriteAsync(userId, movieId);
@@ -20,6 +22,7 @@ public class FavouriteMoviesController : ControllerBase
     }
 
     [HttpPost("remove")]
+    [Authorize]
     public async Task<IActionResult> Remove([FromQuery] int userId, [FromQuery] int movieId)
     {
         await _facade.RemoveFavouriteAsync(userId, movieId);
@@ -27,6 +30,7 @@ public class FavouriteMoviesController : ControllerBase
     }
 
     [HttpGet("{userId}")]
+    [Authorize]
     public async Task<IActionResult> GetAll(int userId)
     {
         var favourites = await _facade.GetFavouritesByUserIdAsync(userId);

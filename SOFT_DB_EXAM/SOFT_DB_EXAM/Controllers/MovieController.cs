@@ -29,6 +29,7 @@ public class MoviesController : ControllerBase
     }
 
     [HttpGet("search")]
+    [Authorize]
     public async Task<IActionResult> Search([FromQuery] string q, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
         var result = await _movieFacade.SearchByTitleAsync(q, page, pageSize);
@@ -36,6 +37,7 @@ public class MoviesController : ControllerBase
     }
     
     [HttpGet("smart-search")]
+    [Authorize]
     public async Task<IActionResult> SmartSearch([FromQuery] string q, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
         var results = await _movieFacade.SearchByKeywordsAsync(q, page, pageSize);
@@ -43,6 +45,7 @@ public class MoviesController : ControllerBase
     }
     
     [HttpPost("by-ids")]
+    [Authorize]
     public async Task<IActionResult> GetByIds([FromBody] List<int> ids)
     {
         if (ids == null || !ids.Any())

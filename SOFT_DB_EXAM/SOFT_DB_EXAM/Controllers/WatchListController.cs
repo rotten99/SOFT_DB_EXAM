@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SOFT_DB_EXAM.Entities;
 using SOFT_DB_EXAM.Facades;
 
@@ -18,6 +19,7 @@ public class WatchListsController : ControllerBase
     }
 
     [HttpPost("create")]
+    [Authorize]
     public IActionResult CreateWatchList([FromQuery] string name, [FromQuery] bool isPrivate, [FromQuery] int userId)
     {
         var id = _watchListFacade.CreateWatchList(name, isPrivate, userId);
@@ -25,6 +27,7 @@ public class WatchListsController : ControllerBase
     }
 
     [HttpPost("{watchListId}/add-movies")]
+    [Authorize]
     public async Task<IActionResult> AddMoviesToWatchList(int watchListId, [FromBody] List<int> movieIds)
     {
         await _watchListFacade.AddMoviesToWatchListAsync(watchListId, movieIds);
@@ -32,6 +35,7 @@ public class WatchListsController : ControllerBase
     }
 
     [HttpGet("user/{userId}")]
+    [Authorize]
     public async Task<IActionResult> GetByUserId(int userId)
     {
         var lists = await _watchListFacade.GetWatchListsByUserIdAsync(userId);
@@ -39,6 +43,7 @@ public class WatchListsController : ControllerBase
     }
 
     [HttpGet("{watchListId}")]
+    [Authorize]
     public async Task<IActionResult> GetById(int watchListId)
     {
         var list = await _watchListFacade.GetWatchListByIdAsync(watchListId);
@@ -46,6 +51,7 @@ public class WatchListsController : ControllerBase
     }
 
     [HttpPost("{watchListId}/follow")]
+    [Authorize]
     public async Task<IActionResult> Follow(int watchListId, [FromQuery] int userId)
     {
         await _watchListFacade.FollowWatchListAsync(userId, watchListId);
@@ -53,6 +59,7 @@ public class WatchListsController : ControllerBase
     }
 
     [HttpPost("{watchListId}/unfollow")]
+    [Authorize]
     public async Task<IActionResult> Unfollow(int watchListId, [FromQuery] int userId)
     {
         await _watchListFacade.UnfollowWatchListAsync(userId, watchListId);
@@ -60,6 +67,7 @@ public class WatchListsController : ControllerBase
     }
 
     [HttpGet("followed/{userId}")]
+    [Authorize]
     public async Task<IActionResult> GetFollowed(int userId)
     {
         var lists = await _watchListFacade.GetFollowedWatchListsByUserIdAsync(userId);
@@ -67,6 +75,7 @@ public class WatchListsController : ControllerBase
     }
     
     [HttpPost("{watchListId}/remove-movie")]
+    [Authorize]
     public async Task<IActionResult> RemoveMovie(int watchListId, [FromQuery] int movieId)
     {
         await _watchListFacade.RemoveMovieFromWatchListAsync(watchListId, movieId);

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SOFT_DB_EXAM.Dtos;
 using SOFT_DB_EXAM.Facades;
 
@@ -18,12 +19,14 @@ public class WatchPartyController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> Create([FromBody] CreateWatchPartyDto dto)
     {
         var id = await _facade.CreateWatchParty(dto.Title, dto.MovieIds, dto.UserIds, dto.StartTime, dto.EndTime);
         return Ok(new { PartyId = id });
     } 
     [HttpPost("subscribe")]
+    [Authorize]
     public async Task<IActionResult> Subscribe([FromBody] WatchPartySubscriptionDto dto)
     {
         try
@@ -42,6 +45,7 @@ public class WatchPartyController : ControllerBase
     }
     
     [HttpPost("join")]
+    [Authorize]
     public async Task<IActionResult> Join([FromBody] WatchPartySubscriptionDto dto)
     {
         using var context = ApplicationContextFactory.CreateDbContext();
