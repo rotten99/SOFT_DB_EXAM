@@ -11,6 +11,7 @@ public class ReviewFacade
     private readonly MovieFacade _movieFacade;
     private const int CacheTtlSeconds = 300;
 
+
     public ReviewFacade(ILogger<ReviewFacade> logger, RedisFacade redis, MovieFacade movieFacade)
     {
         _logger = logger;
@@ -210,5 +211,21 @@ public class ReviewFacade
         await _redis.SetStringAsync(cacheKey, json, TimeSpan.FromMinutes(5));
 
         return dbReview;
+    }
+    
+    public async Task<(int TotalReviews, int UsersWithAtLeastOneReview)> GetReviewStatisticsAsync()
+    {
+        
+        using var context = ApplicationContextFactory.CreateDbContext();
+        
+        var totalReviews = await context.Reviews.CountAsync();
+
+        
+        var usersWithReviews = await context.Users
+            .Include(u => u.Reviews)          
+            .Where(u => u.Reviews.Any())       
+            .CountAsync();
+
+        return (totalReviews, usersWithReviews);
     }
 }

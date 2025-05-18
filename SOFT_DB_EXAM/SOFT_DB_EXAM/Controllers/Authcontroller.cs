@@ -67,7 +67,7 @@ public class AuthController : ControllerBase
         {
             token = new JwtSecurityTokenHandler().WriteToken(token),
             expiration = token.ValidTo,
-            userId     = user.Id          
+            userId = user.Id
         });
     }
 
@@ -126,5 +126,67 @@ public class AuthController : ControllerBase
                 CreatedAt = DateTime.UtcNow
             }
         );
+    }
+
+    public class EditUserModel
+    {
+        public string? Username { get; set; }
+        public string? Email { get; set; }
+        public string? Password { get; set; }
+    }
+
+    [HttpPut("edituser")]
+    [Authorize]
+    public async Task<IActionResult> EditUser([FromBody] EditUserModel model)
+    {
+        var uidClaim = User.FindFirst("uid")?.Value;
+        if (!int.TryParse(uidClaim, out var userId))
+            return Unauthorized();
+
+        var user = await _dbContext.Users.FindAsync(userId);
+        if (user == null)
+            return NotFound(new { message = "User not found" });
+
+        if (!string.IsNullOrWhiteSpace(model.Username) &&
+            model.Username != user.UserName)
+        {
+            if (await _dbContext.Users
+                    .AnyAsync(u => u.UserName == model.Username && u.Id != userId))
+            {
+                return Conflict(new { message = "Username already in use" });
+            }
+
+            user.UserName = model.Username;
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Email) &&
+            model.Email != user.Email)
+        {
+            if (await _dbContext.Users
+                    .AnyAsync(u => u.Email == model.Email && u.Id != userId))
+            {
+                return Conflict(new { message = "Email already in use" });
+            }
+
+            user.Email = model.Email;
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Password))
+        {
+            user.Password = BCrypt.HashPassword(model.Password);
+        }
+
+        _dbContext.Users.Update(user);
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(new
+        {
+            Id = user.Id,
+            Username = user.UserName,
+            Email = user.Email,
+            CreatedAt = user.CreatedAt,
+            MoviesReviewed = user.MoviesReviewed,
+            MoviesWatched = user.MoviesWatched
+        });
     }
 }
