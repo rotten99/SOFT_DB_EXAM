@@ -18,14 +18,21 @@ public class ReviewFacade
         _movieFacade = movieFacade;
     }
 
-    public async Task CreateReviewAsync(string reviewText, int rating, int movieId, int userId, string title)
+    public async Task CreateReviewAsync(
+        string reviewText,
+        int rating,
+        int movieId,
+        int userId,
+        string title)
     {
-        using var context = ApplicationContextFactory.CreateDbContext();
-        using var transaction = context.Database.BeginTransaction();
+        using var context      = ApplicationContextFactory.CreateDbContext();
+        using var transaction  = context.Database.BeginTransaction();
 
+        // 1) insert into SQL
         try
         {
-            _logger.LogInformation("Creating review for movie {MovieId} by user {UserId}", movieId, userId);
+            _logger.LogInformation(
+               "Creating review for movie {MovieId} by user {UserId}", movieId, userId);
 
             context.Database.ExecuteSqlRaw(@"
                 INSERT INTO Reviews (UserId, MovieId, Title, Description, Rating)
@@ -33,29 +40,53 @@ public class ReviewFacade
             ", userId, movieId, title, reviewText, rating);
 
             transaction.Commit();
-            _logger.LogInformation("Successfully created review for movie {MovieId} by user {UserId}", movieId, userId);
+            _logger.LogInformation(
+               "Successfully created review for movie {MovieId} by user {UserId}",
+               movieId, userId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create review for movie {MovieId} by user {UserId}", movieId, userId);
+            _logger.LogError(
+              ex, "Failed to create review for movie {MovieId} by user {UserId}", movieId, userId);
             transaction.Rollback();
             throw;
         }
 
+        // 2) Invalidate the Redis cache for this movie's reviews
         try
         {
-            var averageRating = context.AverageRatings.FirstOrDefault(a => a.MovieId == movieId);
-            if (averageRating == null)
-            {
-                _logger.LogWarning("No average rating found in SQL for movie {MovieId}", movieId);
-                return;
-            }
-
-            await _movieFacade.UpdateRatingAsync(movieId, (double)averageRating.AverageRatings, averageRating.NumberOfRatings);
+            var cacheKey = $"reviews:movie:{movieId}";
+            await _redis.DeleteKeyAsync(cacheKey);
+            _logger.LogInformation("Invalidated cache key {CacheKey}", cacheKey);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update MongoDB movie rating for MovieId {MovieId}", movieId);
+            _logger.LogError(ex, "Failed to evict cache after creating review for movie {MovieId}", movieId);
+            // we don't re-throw here—cache eviction failure shouldn't block your review creation
+        }
+
+        // 3) Recompute & push the new average rating into Mongo
+        try
+        {
+            var averageRating = context.AverageRatings
+                                        .FirstOrDefault(a => a.MovieId == movieId);
+            if (averageRating != null)
+            {
+                await _movieFacade.UpdateRatingAsync(
+                    movieId,
+                    (double)averageRating.AverageRatings,
+                    averageRating.NumberOfRatings);
+            }
+            else
+            {
+                _logger.LogWarning(
+                  "No average rating found in SQL for movie {MovieId}", movieId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+              ex, "Failed to update MongoDB movie rating for MovieId {MovieId}", movieId);
             throw;
         }
     }
