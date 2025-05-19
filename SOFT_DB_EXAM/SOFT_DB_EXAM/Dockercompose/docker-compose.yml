@@ -1,0 +1,119 @@
+﻿version: '3.9'
+
+services:
+  ###############################
+  # 1) Standalone MongoDB Prod #
+  ###############################
+
+  mongodbproduction:
+    image: mongo:6.0
+    container_name: mongodbproduction
+    ports:
+      - "27018:27017"  # Host:Container
+    volumes:
+      - mongodbproduction-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--host", "localhost", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  mongo-init:
+    image: mongo:6.0
+    container_name: mongo-init
+    depends_on:
+      mongodbproduction:
+        condition: service_healthy
+    entrypoint:
+      - sh
+      - -c
+      - |
+        # give Mongo a moment to settle
+        sleep 5
+        
+        # count existing docs
+        COUNT=$(mongosh --quiet --host mongodbproduction:27017 \
+          --eval "db.getSiblingDB('MoviesDatabase').Movies.countDocuments()")
+        
+        if [ "${COUNT:-0}" -eq 0 ] 2>/dev/null; then
+          echo "Seeding Movies collection from JSON..."
+          mongoimport \
+            --host mongodbproduction:27017 \
+            --db MoviesDatabase \
+            --collection Movies \
+            --type json \
+            --jsonArray \
+            --file /docker-entrypoint-initdb.d/movies.json
+        else
+          echo "Movies already seeded ($COUNT docs), skipping."
+        fi
+    volumes:
+      - ./movies.json:/docker-entrypoint-initdb.d/movies.json:ro
+    restart: "no"
+
+  #########################
+  # 2) Redis & SQL Server #
+  #########################
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: sqlserver
+    environment:
+      SA_PASSWORD: "yourStrong(!)Password"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1434:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: [ "CMD-SHELL", "grep 'SQL Server is now ready for client connections' /var/opt/mssql/log/errorlog || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  #########################
+  # 3) Your Movie API     #
+  #########################
+
+  app:
+    image: soft_db_exam
+    container_name: movie-api
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=movieDB;User Id=sa;Password=yourStrong(!)Password;TrustServerCertificate=True;"
+      Redis__ConnectionString: "redis:6379"
+      MongoDbSettings__ConnectionString: "mongodb://mongodbproduction:27017"
+      MongoDbSettings__DatabaseName: "MoviesDatabase"
+      MongoDbSettings__CollectionName: "Movies"
+      Jwt__Key: "a-very-long-secret-key-you-should-store-safely"
+      Jwt__Issuer: "YourApiName"
+      Jwt__Audience: "YourApiClients"
+      Jwt__ExpireMinutes: "60"
+      ASPNETCORE_URLS: "http://+:80"
+    ports:
+      - "5001:80"
+
+volumes:
+  sqlserver-data:
+  redis-data:
+  mongodbproduction-data:

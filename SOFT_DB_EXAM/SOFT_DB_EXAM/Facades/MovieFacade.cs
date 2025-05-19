@@ -77,6 +77,7 @@ public class MovieFacade
     {
         _logger.LogInformation("Fetching all movies: Page {Page}, PageSize {PageSize}", page, pageSize);
         var movies = await _movies.Find(_ => true)
+            .SortByDescending(m => m.Release_Date)
             .Skip((page - 1) * pageSize)
             .Limit(pageSize)
             .ToListAsync();
