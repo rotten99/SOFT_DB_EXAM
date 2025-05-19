@@ -76,8 +76,8 @@ public class MovieFacade
     public async Task<List<Movie>> GetAllAsync(int page = 1, int pageSize = 20)
     {
         _logger.LogInformation("Fetching all movies: Page {Page}, PageSize {PageSize}", page, pageSize);
-        var movies = await _movies.Find(_ => true)
-            .SortByDescending(m => m.Release_Date)
+        var movies = await _movies.Find(m => m.Vote_Count > 1000)
+            .SortByDescending(m => m.Vote_Average)
             .Skip((page - 1) * pageSize)
             .Limit(pageSize)
             .ToListAsync();
