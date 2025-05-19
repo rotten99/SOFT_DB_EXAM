@@ -59,6 +59,6 @@ Når en klient foretager et GET-kald, forsøger løsningen først at hente data 
 
 Denne tilgang reducerer svartider, skalerer bedre under høj belastning og giver en god balance mellem aktualitet og performance.  
 - **Publish Subscribe**:
-Vi bruger et reduceret publish-subscribe-system. Det betyder, at vi har channel-baseret messaging, hvor beskeder publiceres til en Redis-kanal, og alle klienter, der lytter via en SignalR-hub, modtager dem i realtid.
+Vi bruger et reduceret publish-subscribe-system til vores watch party funktionalitet. Det betyder, at vi har channel-baseret messaging, hvor beskeder publiceres til en Redis-kanal, og alle klienter, der lytter via en SignalR-hub, modtager dem i realtid.
 
 Til gengæld mangler vi funktioner som køsystem, persistens af beskeder, og avanceret filtrering og routing, som man f.eks. får med en løsning som RabbitMQ. Derfor lever systemet ikke helt op til det klassiske publish-subscribe-mønster, men fungerer fint til simple og hurtige realtids-scenarier som chat
