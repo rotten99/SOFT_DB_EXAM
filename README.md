@@ -5,9 +5,9 @@
 - [Tech stack](#tech-stack)
 - [MSSQL](#mssql)
   - [Isolation level, Transactions, og Locks.](#isolation-level-transactions-og-locks)
-  - [query optimization](#query-optimization)
-  - [stored procedures](#stored-procedures)
-  - [trigger](#trigger)
+  - [Query optimization](#query-optimization)
+  - [Stored procedures](#stored-procedures)
+  - [Trigger](#Trigger)
 - [MongoDB](#mongodb)
 - [Redis](#redis)
 
@@ -39,12 +39,12 @@ Disse strategier er implementeret for vores vores MSSQL database, hvilket er vor
 
 - **Transactions**: Til alt der berører vores relationelle del af opgaven (MSSQL) gør vi brug af EF Core og dertil følger det at vi også gør brug af deres måde at håndtere transactions på. Dette betyder at alle database operationer bliver lavet som en transaction. Dette sikrer at alle ændringer bliver gemt i en transaction, og hvis der opstår en fejl, bliver alle ændringer rullet tilbage. Til at skrive vores transanctions gør vi brug af LINQ.
 
-### query optimization
+### Query optimization
 indexing
 
-### stored procedures
+### Stored procedures
 
-### trigger
+### Trigger
 
 ## MongoDB
 
