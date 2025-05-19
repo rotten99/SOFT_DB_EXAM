@@ -152,7 +152,6 @@ public class Program
             var ratingSeeder = scope.ServiceProvider.GetRequiredService<RatingSeederService>();
             await ratingSeeder.SeedAverageRatingsIfEmptyAsync();
         }
-        app.MapHub<WatchPartyHub>("/hub/watchparty");
         
 
 
@@ -165,6 +164,7 @@ public class Program
         }
 
         app.UseHttpsRedirection();
+        app.UseRouting();
         
         app.UseDefaultFiles(); // Serves index.html if no file is specified
         app.UseStaticFiles();  // Allows serving .html, .js, .css etc. from wwwroot/
@@ -172,8 +172,11 @@ public class Program
         app.UseCors("AllowAll");
         app.UseAuthentication();
         app.UseAuthorization();
-        app.MapControllers();
-
+        app.UseEndpoints(endpoints =>
+        {
+            endpoints.MapControllers();
+            endpoints.MapHub<WatchPartyHub>("/hub/watchparty"); 
+        });
 
         app.Run();
     }

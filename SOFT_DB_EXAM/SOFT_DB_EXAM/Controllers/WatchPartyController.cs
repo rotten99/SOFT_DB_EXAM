@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SOFT_DB_EXAM.Dtos;
+using SOFT_DB_EXAM.Entities;
 using SOFT_DB_EXAM.Facades;
 
 namespace SOFT_DB_EXAM.Controllers;
@@ -17,6 +18,30 @@ public class WatchPartyController : ControllerBase
         _facade = facade;
         _logger = logger;
     }
+    
+    [HttpGet("active")]
+    [Authorize]
+    public async Task<ActionResult<List<WatchParty>>> GetActive()
+    {
+        var list = await _facade.GetActiveWatchPartiesAsync();
+        return Ok(list);
+    }
+
+    [HttpGet("upcoming")]
+    [Authorize]
+    public async Task<ActionResult<List<WatchParty>>> GetUpcoming()
+    {
+        var list = await _facade.GetUpcomingWatchPartiesAsync();
+        return Ok(list);
+    }
+    
+    [HttpGet("{id}")]
+    [Authorize]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var p = await _facade.GetByIdAsync(id);
+        return p == null ? NotFound() : Ok(p);
+    }
 
     [HttpPost]
     [Authorize]
@@ -32,10 +57,14 @@ public class WatchPartyController : ControllerBase
         try
         {
             var success = await _facade.SubscribeUserAsync(dto.PartyId, dto.UserId);
-            if (!success)
-                return NotFound("Watch party or user not found, or user already subscribed.");
 
-            return Ok("User successfully subscribed.");
+            // If already subscribed, still return success
+            if (!success)
+            {
+                _logger.LogInformation("User {UserId} was already subscribed to WatchParty {PartyId}", dto.UserId, dto.PartyId);
+            }
+
+            return Ok("User is subscribed (or already was).");
         }
         catch (Exception ex)
         {
@@ -43,6 +72,7 @@ public class WatchPartyController : ControllerBase
             return StatusCode(500, "An error occurred.");
         }
     }
+
     
     [HttpPost("join")]
     [Authorize]
