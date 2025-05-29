@@ -46,7 +46,6 @@ public class FavouriteMovieFacade
             _logger.LogInformation("Updating Redis cache for user {UserId} favourites (add)", userId);
 
             var list = JsonSerializer.Deserialize<List<FavouriteMovie>>(cachedJson)!;
-            // add the new stripped entry
             list.Add(new FavouriteMovie {
                 Id      = fav.Id,
                 UserId  = fav.UserId,

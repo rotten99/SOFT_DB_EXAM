@@ -41,7 +41,7 @@ namespace SOFT_DB_EXAM.Facades
             await _subscriber.PublishAsync(channel, message);
         }
 
-        // (Optional) Server-side subscription handler
+        
         public async Task SubscribeAsync(string channel, Action<RedisChannel, RedisValue> handler)
         {
             await _subscriber.SubscribeAsync(channel, (redisChannel, redisValue) =>

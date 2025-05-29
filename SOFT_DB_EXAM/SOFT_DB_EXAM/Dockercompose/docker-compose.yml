@@ -259,7 +259,7 @@ services:
       retries: 10
 
   #########################
-  # 6) Your Movie API     #
+  # 6) Movie API     #
   #########################
   app:
     image: soft_db_exam

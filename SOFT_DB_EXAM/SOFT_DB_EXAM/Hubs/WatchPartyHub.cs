@@ -19,7 +19,7 @@ namespace SOFT_DB_EXAM.Hubs
         }
 
 
-        // Client leaves the group (optional)
+        
         public async Task LeaveParty(int partyId)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"watchparty:{partyId}");

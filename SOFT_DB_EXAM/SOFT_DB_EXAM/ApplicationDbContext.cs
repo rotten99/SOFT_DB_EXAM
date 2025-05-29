@@ -57,7 +57,6 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(wf => wf.WatchListId)
             .OnDelete(DeleteBehavior.Restrict); // Prevent cascade path
 
-        // Optional: configure WatchLists -> User if you want this one to cascade
         modelBuilder.Entity<WatchList>()
             .HasOne(wl => wl.User)
             .WithMany(u => u.WatchListsOwned)

@@ -63,7 +63,6 @@ public class ReviewFacade
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to evict cache after creating review for movie {MovieId}", movieId);
-            // we don't re-throw here—cache eviction failure shouldn't block your review creation
         }
 
         // 3) Recompute & push the new average rating into Mongo
