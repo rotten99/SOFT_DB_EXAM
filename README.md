@@ -6,7 +6,7 @@
 - [Docker compose guide](#docker-compose-guide)
 
 ## Tech stack
-Teknologistakken for microservicen er som følger:
+Teknologistakken for applikationen er som følger:
 - **C#**: Hovedprogrammeringssproget for applikationen.
 - **ASP NET Core 8.0**: Hovedframeworket for applikationen.
 - **Microsoft SQL Server**: Databasen til applikationen.
