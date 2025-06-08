@@ -27,7 +27,7 @@ Denne fil skal pakkes ud i mappen `dockercompose` for at kunne seede MongoDB dat
 Derefter kan du clone dette repository og køre følgende kommando i mappen dockercompose hvor `docker-compose.yml` filen er placeret:
 
 ```bash
-docker-compose up --d
+docker-compose up -d
 ```
 Herefter kan du tilgå applikationen på `http://localhost:5001/swagger/index.html` for at teste applikationen.
 OBS: Husk at du skal have oprettet en bruger og logge ind for at teste endpoints.
